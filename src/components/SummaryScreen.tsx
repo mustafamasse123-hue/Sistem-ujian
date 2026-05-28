@@ -178,10 +178,12 @@ export default function SummaryScreen({
       return h;
     };
 
-    // Partition column-wise
+    // Partition column-wise with a reliably sorted list of questions (1 to 30 by original id)
+    const sortedQuestionsForPng = [...questions].sort((a, b) => a.id - b.id);
+
     const leftHeights: number[] = [];
     let leftColumnTotalY = 320;
-    questions.slice(0, 15).forEach(q => {
+    sortedQuestionsForPng.slice(0, 15).forEach(q => {
       const h = getCardHeight(q);
       leftHeights.push(h);
       leftColumnTotalY += h + 24; // with gap spaces
@@ -189,7 +191,7 @@ export default function SummaryScreen({
 
     const rightHeights: number[] = [];
     let rightColumnTotalY = 320;
-    questions.slice(15, 30).forEach(q => {
+    sortedQuestionsForPng.slice(15, 30).forEach(q => {
       const h = getCardHeight(q);
       rightHeights.push(h);
       rightColumnTotalY += h + 24; // with gap spaces
@@ -316,7 +318,7 @@ export default function SummaryScreen({
     let pRightY = 320;
 
     // Draw all 30 questions
-    questions.forEach((q, idx) => {
+    sortedQuestionsForPng.forEach((q, idx) => {
       const isLeftCol = q.id <= 15;
       const xCoord = isLeftCol ? 50 : 720;
       let yCoord = isLeftCol ? pLeftY : pRightY;
@@ -581,8 +583,16 @@ export default function SummaryScreen({
       align: 'center'
     });
 
+    // Sort questions for PPTX generation so that Pilihan Ganda (Opsi Tunggal) comes first, and Benar-Salah + Pilihan Banyak at the bottom.
+    // Each group is sorted by their original question ID.
+    const pptxQuestions = [
+      ...questions.filter(q => q.type === 'pilihan-ganda').sort((a, b) => a.id - b.id),
+      ...questions.filter(q => q.type === 'benar-salah').sort((a, b) => a.id - b.id),
+      ...questions.filter(q => q.type === 'pilihan-ganyak').sort((a, b) => a.id - b.id),
+    ];
+
     // 2. DETAILED EXPLANATION PAGES (1 SLIDE PER QUESTION)
-    questions.forEach((q, qIndex) => {
+    pptxQuestions.forEach((q, qIndex) => {
       const qSlide = pptx.addSlide();
       qSlide.background = { fill: 'F8FAFC' };
 
@@ -606,8 +616,8 @@ export default function SummaryScreen({
         catColor = '7C3AED';
       }
 
-      // No. Soal badging row at top
-      qSlide.addText(`SOAL No. ${q.id.toString().padStart(2, '0')}`, {
+      // No. Soal badging row at top (Numbered 1-30 sequentially based on the new ordered array)
+      qSlide.addText(`SOAL No. ${(qIndex + 1).toString().padStart(2, '0')}`, {
         x: 0.5,
         y: 0.3,
         w: 1.4,
@@ -699,7 +709,7 @@ export default function SummaryScreen({
         align: 'left'
       });
 
-      // Feedback Status Bar
+      // Feedback Status Bar (uses actual original question ID to resolve candidate response statistics)
       const wasCorrect = correctStatus[q.id] === true;
       const hadFailures = incorrectAttemptsCount[q.id] === true;
       let statusText = '';
