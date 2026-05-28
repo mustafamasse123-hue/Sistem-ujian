@@ -79,9 +79,8 @@ export default function AdminPanel({
       showToast('Silakan masukkan teks soal terlebih dahulu.', 'error');
       return;
     }
-    // Determine the next starting ID
-    const maxId = questions.reduce((max, q) => q.id > max ? q.id : max, 0);
-    const parsed = parseQuestionsText(bulkText, maxId + 1);
+    // New questions start from ID 1 because old questions will be overwritten
+    const parsed = parseQuestionsText(bulkText, 1);
     
     if (parsed.length === 0) {
       showToast('Karakter format tidak terdeteksi. Silakan periksa kembali teks Anda.', 'error');
@@ -98,15 +97,15 @@ export default function AdminPanel({
     setParsedPreview(list);
   };
 
-  // Save the stagged preview questions into our global question bank
+  // Save the staged preview questions into our global question bank (replacing the old bank completely)
   const handleCommitStaged = () => {
     if (parsedPreview.length === 0) return;
     
-    const updatedBank = [...questions, ...parsedPreview];
-    setQuestions(updatedBank);
+    // Replace old questions completely with parsed preview questions
+    setQuestions(parsedPreview);
     setBulkText('');
     setParsedPreview([]);
-    showToast(`Berhasil menambahkan ${parsedPreview.length} soal ke bank soal ujian!`, 'success');
+    showToast(`Berhasil mengganti bank soal dengan ${parsedPreview.length} soal baru (soal lama dihapus)!`, 'success');
     setActiveTab('manage-bank');
   };
 
@@ -628,8 +627,8 @@ Penjelasan: Tasamuh dan Ta'awun adalah perilaku terpuji.`}
                   className="w-full border border-slate-300 rounded-xl p-4 text-xs font-mono text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 leading-relaxed bg-slate-950 text-slate-100"
                 />
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <span className="text-[10px] text-slate-400 font-bold">
-                    Pendeteksi Cerdas akan menambahkan ID kelanjutan dari: <span className="text-blue-600 font-black">ID {questions.length + 1}</span>
+                  <span className="text-[10px] text-amber-600 font-bold">
+                    ⚠️ Menyimpan soal baru akan otomatis menghapus semua soal lama dan menggantinya dari ID 1.
                   </span>
                   <div className="flex items-center gap-2">
                     {bulkText.trim() && (
