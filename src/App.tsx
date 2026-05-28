@@ -10,6 +10,7 @@ import QuestionNav from './components/QuestionNav';
 import SummaryScreen from './components/SummaryScreen';
 import AdminPanel from './components/AdminPanel';
 import KioskLockdown from './components/KioskLockdown';
+import CheatingWarning from './components/CheatingWarning';
 import PowerButton from './components/PowerButton';
 
 import { BookOpen, PanelRight, PanelRightClose } from 'lucide-react';
@@ -194,6 +195,8 @@ export default function App() {
 
   const [isSidebarHidden, setIsSidebarHidden] = useState(false);
   const [isKioskViolation, setIsKioskViolation] = useState(false);
+  const [violationCount, setViolationCount] = useState(0);
+  const [hasCheatingWarning, setHasCheatingWarning] = useState(false);
   const isPowerButtonBypassRef = React.useRef(false);
 
   // Security Kiosk State
@@ -238,12 +241,22 @@ export default function App() {
     if (!isWelcomed || isExamFinished || isAdminMode) return;
 
     const triggerKioskViolation = () => {
-      if (isPowerButtonBypassRef.current) return;
-      setIsKioskViolation(true);
-      setIsExamFinished(true);
-      try {
-        soundSynth.playError();
-      } catch (_) {}
+      if (isPowerButtonBypassRef.current || isKioskViolation || hasCheatingWarning) return;
+
+      if (violationCount === 0) {
+        setHasCheatingWarning(true);
+        setViolationCount(1);
+        try {
+          soundSynth.playError();
+        } catch (_) {}
+      } else {
+        setHasCheatingWarning(false);
+        setIsKioskViolation(true);
+        setIsExamFinished(true);
+        try {
+          soundSynth.playError();
+        } catch (_) {}
+      }
     };
 
     const handleFullscreenChange = () => {
@@ -287,7 +300,7 @@ export default function App() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleWindowBlur);
     };
-  }, [isWelcomed, isExamFinished, isAdminMode]);
+  }, [isWelcomed, isExamFinished, isAdminMode, violationCount, isKioskViolation, hasCheatingWarning]);
 
   // Transition helper when entering examination
   const handleStartExam = (name: string, examId: string, className: string) => {
@@ -301,6 +314,8 @@ export default function App() {
     
     setIsKioskLocked(false);
     setIsKioskViolation(false);
+    setViolationCount(0);
+    setHasCheatingWarning(false);
     setIsWelcomed(true);
 
     // Enter fullscreen right after user gesture starts the exam
@@ -328,6 +343,16 @@ export default function App() {
     setExamQuestions([]);
     setIsKioskLocked(false);
     setIsKioskViolation(false);
+    setViolationCount(0);
+    setHasCheatingWarning(false);
+  };
+
+  const handleAcknowledgeWarning = () => {
+    setHasCheatingWarning(false);
+    enterFullscreen();
+    try {
+      soundSynth.playSuccess();
+    } catch (_) {}
   };
 
   const handlePowerDoublePress = () => {
@@ -497,6 +522,16 @@ export default function App() {
         />
         <PowerButton onDoublePress={handlePowerDoublePress} isDisabled={isPowerButtonDisabled} />
       </>
+    );
+  }
+
+  if (isWelcomed && hasCheatingWarning) {
+    return (
+      <CheatingWarning
+        studentName={studentName}
+        studentClass={studentClass}
+        onAcknowledge={handleAcknowledgeWarning}
+      />
     );
   }
 
