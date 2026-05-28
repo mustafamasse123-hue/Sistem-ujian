@@ -30,3 +30,14 @@ export interface ExamState {
   startTime: number;
   endTime: number | null;
 }
+
+export interface WelcomeScreenConfig {
+  headerText: string;
+  subheadText: string;
+  titleText: string;
+  descriptionText: string;
+  classes: string[];
+  rules: string[];
+  footerText: string;
+}
+

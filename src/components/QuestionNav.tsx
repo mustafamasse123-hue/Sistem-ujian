@@ -1,6 +1,8 @@
 import { CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react';
+import { Question } from '../types';
 
 interface QuestionNavProps {
+  questions: Question[];
   totalQuestions: number;
   currentIndex: number;
   correctStatus: { [qId: number]: boolean };
@@ -9,6 +11,7 @@ interface QuestionNavProps {
 }
 
 export default function QuestionNav({
+  questions,
   totalQuestions,
   currentIndex,
   correctStatus,
@@ -18,17 +21,19 @@ export default function QuestionNav({
   
   // Categorize questions into sections
   const getSection = (number: number) => {
-    if (number <= 20) return 'PILIHAN GANDA';
-    if (number <= 25) return 'BENAR / SALAH';
+    const q = questions.find(quest => quest.id === number);
+    if (!q) return 'PILIHAN GANDA';
+    if (q.type === 'pilihan-ganda') return 'PILIHAN GANDA';
+    if (q.type === 'benar-salah') return 'BENAR / SALAH';
     return 'GANDA KOMPLEKS';
   };
 
-  const pgNumbers = Array.from({ length: 20 }, (_, i) => i + 1);
-  const bsNumbers = Array.from({ length: 5 }, (_, i) => i + 21);
-  const pkNumbers = Array.from({ length: 5 }, (_, i) => i + 26);
+  const pgNumbers = questions.filter(q => q.type === 'pilihan-ganda').map(q => q.id);
+  const bsNumbers = questions.filter(q => q.type === 'benar-salah').map(q => q.id);
+  const pkNumbers = questions.filter(q => q.type === 'pilihan-ganyak').map(q => q.id);
 
   const getButtonClass = (number: number) => {
-    const isCurrent = currentIndex === number - 1;
+    const isCurrent = currentIndex === questions.findIndex(q => q.id === number);
     const isCorrect = correctStatus[number] === true;
     const hasError = incorrectAttempts[number] === true;
 
@@ -60,7 +65,7 @@ export default function QuestionNav({
           <button
             id={`btn-nav-question-${num}`}
             key={num}
-            onClick={() => onNavigate(num - 1)}
+            onClick={() => onNavigate(questions.findIndex(q => q.id === num))}
             className={getButtonClass(num)}
             title={`Buka Soal Nomor ${num} (${getSection(num)})`}
           >
@@ -93,9 +98,9 @@ export default function QuestionNav({
 
       {/* Grid segments */}
       <div className="space-y-4 max-h-[350px] overflow-y-auto no-scrollbar">
-        {renderSectionGrid(pgNumbers, "1. PILIHAN GANDA", "Soal Nomor 1 s.d 20")}
-        {renderSectionGrid(bsNumbers, "2. BENAR / SALAH", "Soal Nomor 21 s.d 25")}
-        {renderSectionGrid(pkNumbers, "3. GANDA KOMPLEKS", "Soal Nomor 26 s.d 30")}
+        {renderSectionGrid(pgNumbers, "1. PILIHAN GANDA", "Opsi Tunggal (25 Soal)")}
+        {renderSectionGrid(bsNumbers, "2. BENAR / SALAH", "Pernyataan Benar / Salah (2 Soal)")}
+        {renderSectionGrid(pkNumbers, "3. GANDA KOMPLEKS", "Pilihan Ganda Kompleks (3 Soal)")}
       </div>
 
       {/* CBT Legend indicators description */}

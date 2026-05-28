@@ -4,6 +4,7 @@ import { CheckCircle2, XCircle, ChevronLeft, ChevronRight, HelpCircle, FileText 
 
 interface QuestionAreaProps {
   question: Question;
+  questionNumber: number;
   selectedAnswer: string | string[];
   isCorrect: boolean;
   hasIncorrectAttempt: boolean;
@@ -19,6 +20,7 @@ interface QuestionAreaProps {
 
 export default function QuestionArea({
   question,
+  questionNumber,
   selectedAnswer,
   isCorrect,
   hasIncorrectAttempt,
@@ -42,7 +44,7 @@ export default function QuestionArea({
         setMultiSelection([]);
       }
     }
-  }, [question.id]);
+  }, [question.id, JSON.stringify(selectedAnswer)]);
 
   // Determine material category based on question ID
   const getCategory = (id: number): { label: string; color: string } => {
@@ -141,7 +143,7 @@ export default function QuestionArea({
         <div className="mb-6">
           <div className="flex items-start gap-3">
             <div className="h-7 w-7 rounded-full bg-slate-100 text-slate-600 font-bold font-mono text-xs flex items-center justify-center shrink-0 mt-0.5 border border-slate-200">
-              {question.id}
+              {questionNumber}
             </div>
             <p className={`${getHeadingClass()} font-semibold text-slate-800 leading-relaxed`}>
               {question.questionText}
@@ -223,7 +225,7 @@ export default function QuestionArea({
                 {question.type === 'pilihan-ganyak' ? (
                   <div
                     id={`checkbox-option-${question.id}-${option.key}`}
-                    className={`h-5 w-5 rounded border-2 flex items-center justify-center transition-all shrink-0 ${
+                    className={`h-5 w-5 rounded border-2 flex items-center justify-center transition-all shrink-0 pointer-events-none ${
                       isSelected 
                         ? 'bg-blue-600 border-blue-600 text-white shadow-xs' 
                         : 'border-slate-300 bg-white group-hover:border-blue-300'

@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
-import { BookOpen, User, CreditCard, ShieldCheck } from 'lucide-react';
+import { BookOpen, User, CreditCard, ShieldCheck, KeyRound } from 'lucide-react';
+import { WelcomeScreenConfig } from '../types';
 
 interface WelcomeScreenProps {
   onStart: (name: string, examId: string, className: string) => void;
+  config: WelcomeScreenConfig;
+  onAdminClick: () => void;
 }
 
-export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
+export default function WelcomeScreen({ onStart, config, onAdminClick }: WelcomeScreenProps) {
   const [name, setName] = useState('');
   const [examId, setExamId] = useState('');
-  const [className, setClassName] = useState('Kelas VIII A');
+  const [className, setClassName] = useState(config.classes[0] || 'Kelas VIII A');
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -25,28 +28,28 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-100 relative overflow-hidden">
       {/* Background decorations */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-blue-100/40 blur-3xl"></div>
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-indigo-100/40 blur-3xl"></div>
+      <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-blue-105 bg-blue-100/45 blur-3xl"></div>
+      <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-indigo-105 bg-indigo-100/45 blur-3xl"></div>
 
       <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl border border-slate-250 overflow-hidden relative z-10 flex flex-col md:flex-row">
         {/* Left Side Info Panel */}
         <div className="md:w-5/12 bg-gradient-to-br from-blue-800 to-indigo-950 text-white p-8 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <span className="p-2.5 bg-blue-700/50 rounded-xl border border-blue-600">
+              <span className="p-2.5 bg-blue-700/50 rounded-xl border border-blue-605">
                 <BookOpen className="w-6 h-6 text-blue-300" />
               </span>
               <div>
-                <h2 className="font-display font-bold text-lg leading-tight tracking-wider">CBT MADRASAH</h2>
-                <p className="text-xs text-blue-200 uppercase tracking-widest font-mono">Akidah Akhlak VIII</p>
+                <h2 className="font-display font-bold text-lg leading-tight tracking-wider uppercase">{config.headerText}</h2>
+                <p className="text-xs text-blue-200 uppercase tracking-widest font-mono">{config.subheadText}</p>
               </div>
             </div>
 
             <h1 className="font-display font-bold text-2xl text-blue-100 leading-tight mb-4">
-              Asesmen Materi Akidah Akhlak
+              {config.titleText}
             </h1>
-            <p className="text-sm text-blue-100/90 leading-relaxed mb-6">
-              Ujian CBT interaktif mencakup pokok pembahasan Akidah Akhlak Kelas VIII MTs: Tawadhu, Tasamuh, Ta'awun, Adab Media Sosial, dan Kisah Keteladanan Abu Bakar As-Siddiq R.A.
+            <p className="text-xs text-blue-100/90 leading-relaxed mb-6">
+              {config.descriptionText}
             </p>
           </div>
 
@@ -55,16 +58,26 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
               <ShieldCheck className="w-4 h-4" /> Aturan CBT Interaktif:
             </div>
             <ul className="text-xs text-blue-200/90 space-y-2 list-disc list-inside">
-              <li>Pilihan Ganda: Langsung memilih satu opsi terbaik.</li>
-              <li>Benar / Salah: Menilai kebenaran pernyataan.</li>
-              <li>Pilihan Banyak: Memilih kombinasi jawaban yang benar.</li>
-              <li>Sistem Koreksi Aktif: Anda harus dapat menjawab benar untuk lanjut ke soal berikutnya.</li>
+              {config.rules.map((rule, idx) => (
+                <li key={idx}>{rule}</li>
+              ))}
             </ul>
           </div>
         </div>
 
         {/* Right Side Form Panel */}
-        <div className="md:w-7/12 p-8 md:p-10 flex flex-col justify-center">
+        <div className="md:w-7/12 p-8 md:p-10 flex flex-col justify-center relative">
+          
+          <button
+            id="btn-admin-portal"
+            onClick={onAdminClick}
+            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-blue-600 transition-all rounded-full hover:bg-slate-50 cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+            title="Akses Portal Administrator"
+          >
+            <KeyRound className="w-4 h-4" /> 
+            <span className="hidden sm:inline">Akses Admin</span>
+          </button>
+
           <div className="mb-6">
             <h2 className="font-display font-bold text-2xl text-slate-800">Kartu Login Peserta</h2>
             <p className="text-sm text-slate-500 mt-1">Masukkan informasi administrasi Anda untuk memulai sesi ujian.</p>
@@ -108,10 +121,9 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
                   onChange={(e) => setClassName(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-lg border border-slate-350 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-slate-800 bg-white transition-colors"
                 >
-                  <option value="Kelas VIII A">Kelas VIII A</option>
-                  <option value="Kelas VIII B">Kelas VIII B</option>
-                  <option value="Kelas VIII C">Kelas VIII C</option>
-                  <option value="Kelas VIII D">Kelas VIII D</option>
+                  {config.classes.map((cName, idx) => (
+                    <option key={idx} value={cName}>{cName}</option>
+                  ))}
                 </select>
               </div>
 
@@ -147,7 +159,7 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
           </form>
 
           <p className="text-center text-[11px] text-slate-400 mt-6">
-            Sistem Ujian Computer Based Test (CBT) Akidah Akhlak MTs v2.4. © 2026 Kementerian Agama RI.
+            {config.footerText}
           </p>
         </div>
       </div>
