@@ -9,6 +9,8 @@ import QuestionArea from './components/QuestionArea';
 import QuestionNav from './components/QuestionNav';
 import SummaryScreen from './components/SummaryScreen';
 import AdminPanel from './components/AdminPanel';
+import KioskLockdown from './components/KioskLockdown';
+import PowerButton from './components/PowerButton';
 
 import { BookOpen } from 'lucide-react';
 
@@ -182,6 +184,96 @@ export default function App() {
     return () => clearInterval(timer);
   }, [isWelcomed, isExamFinished, isAdminMode]);
 
+  // Security Kiosk State
+  const [isKioskLocked, setIsKioskLocked] = useState(false);
+
+  // Auto-fullscreen request helper
+  const enterFullscreen = () => {
+    try {
+      const docEl = document.documentElement;
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().catch((err) => console.warn("Fullscreen request rejected or blocked by browser:", err));
+      } else if ((docEl as any).webkitRequestFullscreen) {
+        (docEl as any).webkitRequestFullscreen();
+      } else if ((docEl as any).mozRequestFullScreen) {
+        (docEl as any).mozRequestFullScreen();
+      } else if ((docEl as any).msRequestFullscreen) {
+        (docEl as any).msRequestFullscreen();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const exitFullscreen = () => {
+    try {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch((err) => console.warn("Fullscreen exit rejected:", err));
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      } else if ((document as any).mozCancelFullScreen) {
+        (document as any).mozCancelFullScreen();
+      } else if ((document as any).msExitFullscreen) {
+        (document as any).msExitFullscreen();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Listen for Kiosk exit/blur and enforce locking
+  useEffect(() => {
+    if (!isWelcomed || isExamFinished || isAdminMode) return;
+
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+      
+      if (!isCurrentlyFullscreen) {
+        setIsKioskLocked(true);
+        try {
+          soundSynth.playError();
+        } catch (_) {}
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        setIsKioskLocked(true);
+        try {
+          soundSynth.playError();
+        } catch (_) {}
+      }
+    };
+
+    const handleWindowBlur = () => {
+      setIsKioskLocked(true);
+      try {
+        soundSynth.playError();
+      } catch (_) {}
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+    };
+  }, [isWelcomed, isExamFinished, isAdminMode]);
+
   // Transition helper when entering examination
   const handleStartExam = (name: string, examId: string, className: string) => {
     setStudentName(name);
@@ -192,7 +284,13 @@ export default function App() {
     const shuffled = shuffleQuestionsAndOptions(questions);
     setExamQuestions(shuffled);
     
+    setIsKioskLocked(false);
     setIsWelcomed(true);
+
+    // Enter fullscreen right after user gesture starts the exam
+    setTimeout(() => {
+      enterFullscreen();
+    }, 100);
   };
 
   const handleToggleSound = () => {
@@ -212,6 +310,20 @@ export default function App() {
     setIsExamFinished(false);
     setIsWelcomed(false);
     setExamQuestions([]);
+    setIsKioskLocked(false);
+  };
+
+  const handlePowerDoublePress = () => {
+    if (isKioskLocked) {
+      enterFullscreen();
+      setIsKioskLocked(false);
+      try {
+        soundSynth.playSuccess();
+      } catch (_) {}
+    } else if (isWelcomed) {
+      exitFullscreen();
+      handleResetExam();
+    }
   };
 
   // Evaluation response checker
@@ -341,15 +453,28 @@ export default function App() {
 
   if (isExamFinished) {
     return (
-      <SummaryScreen
+      <>
+        <SummaryScreen
+          studentName={studentName}
+          studentClass={studentClass}
+          studentId={studentId}
+          questions={examQuestions}
+          correctStatus={correctStatus}
+          incorrectAttemptsCount={incorrectAttempts}
+          timeSpentSeconds={TIMER_INITIAL_SECONDS - timeLeftSeconds}
+          onReset={handleResetExam}
+        />
+        <PowerButton onDoublePress={handlePowerDoublePress} />
+      </>
+    );
+  }
+
+  if (isWelcomed && isKioskLocked) {
+    return (
+      <KioskLockdown
         studentName={studentName}
         studentClass={studentClass}
-        studentId={studentId}
-        questions={examQuestions}
-        correctStatus={correctStatus}
-        incorrectAttemptsCount={incorrectAttempts}
-        timeSpentSeconds={TIMER_INITIAL_SECONDS - timeLeftSeconds}
-        onReset={handleResetExam}
+        onUnlock={handlePowerDoublePress}
       />
     );
   }
@@ -450,6 +575,8 @@ export default function App() {
         </div>
 
       </main>
+
+      <PowerButton onDoublePress={handlePowerDoublePress} />
 
     </div>
   );
