@@ -110,96 +110,383 @@ export default function SummaryScreen({
   const recoveryQuestions = questions.filter(q => incorrectAttemptsCount[q.id]);
 
   const downloadSyllabusAndKey = () => {
-    let content = `========================================================================\n`;
-    content += `KISI-KISI, BUTIR SOAL & KUNCI JAWABAN AKIDAH AKHLAK KELAS VIII MTs\n`;
-    content += `========================================================================\n\n`;
-    
-    content += `I. IDENTITAS SISWA / PESERTA CBT:\n`;
-    content += `------------------------------------------------------------\n`;
-    content += `Nama Lengkap      : ${studentName}\n`;
-    content += `Kelas             : ${studentClass}\n`;
-    content += `No. CBT / Token   : ${studentId}\n`;
-    content += `Skor Hasil Ujian  : ${finalScore} / 100\n`;
-    content += `Durasi Pengerjaan : ${formatDuration(timeSpentSeconds)}\n`;
-    content += `Predikat Kelulusan: ${predicate.label}\n`;
-    content += `Catatan Penting   : ${predicate.note}\n\n`;
+    // 1. Define safe rounded rectangle drawer with older browser fallback support
+    const drawRoundRect = (ctx2d: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => {
+      if (ctx2d.roundRect) {
+        ctx2d.roundRect(x, y, w, h, r);
+      } else {
+        ctx2d.moveTo(x + r, y);
+        ctx2d.lineTo(x + w - r, y);
+        ctx2d.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx2d.lineTo(x + w, y + h - r);
+        ctx2d.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx2d.lineTo(x + r, y + h);
+        ctx2d.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx2d.lineTo(x, y + r);
+        ctx2d.quadraticCurveTo(x, y, x + r, y);
+      }
+    };
 
-    content += `II. KISI-KISI KOMPETENSI DASAR & CAPAIAN BELAJAR:\n`;
-    content += `------------------------------------------------------------\n`;
-    topicsStats.forEach((topic, i) => {
-      content += `${i + 1}. Pokok Pembahasan : ${topic.name}\n`;
-      content += `   Deskripsi Materi: ${topic.description}\n`;
-      content += `   Daftar No. Soal : No. ${topic.questionIds.join(', ')}\n`;
-      content += `   Hasil Akurasi   : ${topic.percent}% (${topic.correctOnFirstTry} dari ${topic.total} benar pada jawab pertama)\n\n`;
-    });
+    const colWidth = 630;
 
-    content += `III. DAFTAR SOAL, OPSI JAWABAN & BOBOT ANALISIS:\n`;
-    content += `============================================================\n\n`;
-
-    questions.forEach((q) => {
-      let catLabel = '';
-      if (q.id <= 4 || q.id === 21 || q.id === 26) catLabel = 'Akhlak Terpuji: Tawadhu';
-      else if (q.id <= 7 || q.id === 22 || q.id === 27) catLabel = 'Akhlak Terpuji: Tasamuh';
-      else if (q.id <= 10 || q.id === 23 || q.id === 28) catLabel = 'Akhlak Terpuji: Ta\'awun';
-      else if (q.id <= 13 || q.id === 24 || q.id === 29) catLabel = 'Adab Media Sosial';
-      else catLabel = 'Keteladanan Abu Bakar As-Siddiq R.A.';
-
-      content += `SOAL NO. ${q.id} (Ref ID: UJI-${q.id.toString().padStart(2, '0')})\n`;
-      content += `------------------------------------------------------------\n`;
-      content += `Materi Pokok: ${catLabel}\n`;
-      content += `Format Soal : ${
-        q.type === 'pilihan-ganda' ? 'Pilihan Ganda (Satu Pilihan Utama)' :
-        q.type === 'benar-salah' ? 'Benar / Salah (Pernyataan)' :
-        'Pilihan Banyak (Pilihan ganda dengan beberapa jawaban benar)'
-      }\n\n`;
+    // 2. Measure Height dynamically based on wrapped text lengths
+    const getCardHeight = (q: Question): number => {
+      // Base padding/margin/static heights:
+      // padding-top (20), pills (24), spacing after pills (38), checklist container padding/height (42 + 20),
+      // line separator & spacing (40), bottom padding (20)
+      let h = 20 + 24 + 38 + 62 + 40 + 20; 
       
-      content += `Pertanyaan:\n${q.questionText}\n\n`;
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+      if (!tempCtx) return 260; // fallback standard height
       
-      content += `Pilihan Opsi:\n`;
-      q.options.forEach(opt => {
-        let isCorrectOpt = false;
-        if (Array.isArray(q.correctKey)) {
-          isCorrectOpt = q.correctKey.includes(opt.key);
-        } else {
-          isCorrectOpt = q.correctKey === opt.key;
+      const wrapHeight = (text: string, maxWidth: number, fontSize: number): number => {
+        tempCtx.font = `bold ${fontSize}px sans-serif`;
+        const words = text.split(' ');
+        let line = '';
+        let lineCount = 1;
+        for (let n = 0; n < words.length; n++) {
+          const testLine = line + words[n] + ' ';
+          const metrics = tempCtx.measureText(testLine);
+          if (metrics.width > maxWidth && n > 0) {
+            lineCount++;
+            line = words[n] + ' ';
+          } else {
+            line = testLine;
+          }
         }
-        content += `  [${isCorrectOpt ? 'V' : ' '}] Opsi ${opt.key} : ${opt.text}\n`;
-      });
-      content += `\n`;
+        return lineCount * (fontSize * 1.45);
+      };
 
-      if (Array.isArray(q.correctKey)) {
-        content += `Kunci Jawaban Tepat : Opsi [ ${q.correctKey.join(', ')} ]\n`;
-      } else {
-        content += `Kunci Jawaban Tepat : Opsi [ ${q.correctKey} ]\n`;
-      }
-      content += `\nPenjelasan Pembahasan Ilmiah:\n>>> ${q.explanation}\n\n`;
+      const textMaxW = colWidth - 40;
+      h += wrapHeight(q.questionText, textMaxW, 14.5);
       
-      const incorrectAttempt = incorrectAttemptsCount[q.id];
-      const isCorrectValue = correctStatus[q.id] === true;
-      let analysisLabel = '';
-      if (isCorrectValue && !incorrectAttempt) {
-        analysisLabel = '✅ Dijawab BENAR (Skor: Sesuai)';
-      } else if (incorrectAttempt) {
-        analysisLabel = '❌ Dijawab SALAH (Skor: 0)';
+      // Calculate Answer Key options text length
+      let correctStr = '';
+      if (Array.isArray(q.correctKey)) {
+        const matchedOpts = q.options.filter(opt => (q.correctKey as string[]).includes(opt.key));
+        correctStr = `Kunci: ${matchedOpts.map(o => `${o.key}. ${o.text}`).join(' & ')}`;
       } else {
-        analysisLabel = '⚪ TIDAK DIJAWAB / DILEWATI (Skor: 0)';
+        const matched = q.options.find(opt => opt.key === q.correctKey);
+        correctStr = `Kunci: ${matched ? `${matched.key}. ${matched.text}` : q.correctKey}`;
       }
-      content += `Analisis Hasil Ujian Anda: ${analysisLabel}\n`;
-      content += `============================================================\n\n`;
+      // Note the text inside the option card is slightly padded on both sides (60px)
+      h += wrapHeight(correctStr, textMaxW - 60, 13);
+      h += wrapHeight(`Materi Esensial / Pembahasan: ${q.explanation}`, textMaxW, 11.5);
+
+      return h;
+    };
+
+    // Partition column-wise
+    const leftHeights: number[] = [];
+    let leftColumnTotalY = 320;
+    questions.slice(0, 15).forEach(q => {
+      const h = getCardHeight(q);
+      leftHeights.push(h);
+      leftColumnTotalY += h + 24; // with gap spaces
     });
 
-    content += `Dicetak oleh: Aplikasi CBT Madrasah Interaktif - MTs Kelas VIII\n`;
-    content += `Tanggal Cetak: ${new Date().toLocaleDateString('id-ID')} pada pukul ${new Date().toLocaleTimeString('id-ID')} WIB.\n`;
+    const rightHeights: number[] = [];
+    let rightColumnTotalY = 320;
+    questions.slice(15, 30).forEach(q => {
+      const h = getCardHeight(q);
+      rightHeights.push(h);
+      rightColumnTotalY += h + 24; // with gap spaces
+    });
 
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `Kisi_Kisi_dan_Kunci_Jawaban_Akidah_Akhlak_Kelas_8_${studentName.replace(/\s+/g, '_')}.txt`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const maxColY = Math.max(leftColumnTotalY, rightColumnTotalY);
+    const totalCanvasHeight = maxColY + 120; // 120 pixels extra space for gorgeous footer
+
+    // 3. Setup real high-definition canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = 1400;
+    canvas.height = totalCanvasHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Global off-white background
+    ctx.fillStyle = '#f8fafc'; // light slate-50
+    ctx.fillRect(0, 0, 1400, totalCanvasHeight);
+
+    // 4. Header Background Gradient
+    const headerGrad = ctx.createLinearGradient(0, 0, 1400, 0);
+    headerGrad.addColorStop(0, '#1e3a8a'); // dark blue-900
+    headerGrad.addColorStop(0.5, '#1e40af'); // blue-800
+    headerGrad.addColorStop(1, '#312e81'); // indigo-950
+    ctx.fillStyle = headerGrad;
+    ctx.fillRect(0, 0, 1400, 260);
+
+    // Gold ribbon line
+    ctx.fillStyle = '#f59e0b'; // amber-500 helper ribbon
+    ctx.fillRect(0, 250, 1400, 10);
+
+    // Header Content
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 36px sans-serif';
+    ctx.fillText('KISI-KISI & KUNCI JAWABAN AKIDAH AKHLAK VIII', 180, 95);
+
+    ctx.fillStyle = '#93c5fd';
+    ctx.font = '600 16px sans-serif';
+    ctx.fillText('ASESMEN AKHIR SEMESTER • MADRASAH TSANAWIYAH (CBT COMPUTER-BASED TEST)', 180, 138);
+
+    // Draw circular CBT Emblem badge
+    ctx.beginPath();
+    ctx.arc(95, 115, 52, 0, Math.PI * 2);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(95, 115, 46, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e3a8a';
+    ctx.fill();
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fef08a';
+    ctx.font = '900 24px sans-serif';
+    ctx.fillText('CBT', 95, 102);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 10px sans-serif';
+    ctx.fillText('MTs-VIII', 95, 126);
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+
+    // Info cards (badges) for student metadata in header
+    const studentInfoY = 175;
+    const badges = [
+      { label: 'Siswa / Peserta', value: studentName },
+      { label: 'Kelas', value: studentClass },
+      { label: 'ID CBT', value: studentId },
+      { label: 'Skor Ujian', value: `${finalScore} / 100` },
+      { label: 'Kualifikasi', value: predicate.label }
+    ];
+
+    let badgeX = 180;
+    badges.forEach((b, i) => {
+      const bWidth = i === 4 ? 260 : i === 0 ? 250 : 160;
+      
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      drawRoundRect(ctx, badgeX, studentInfoY, bWidth, 54, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(b.label.toUpperCase(), badgeX + 14, studentInfoY + 20);
+
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText(b.value, badgeX + 14, studentInfoY + 42);
+
+      badgeX += bWidth + 15;
+    });
+
+    // 5. Wrap Text helper for live painting
+    const drawTextWrapped = (text: string, x: number, y: number, maxWidth: number, fontSize: number, fontWeight: string, color: string, isItalic: boolean = false): number => {
+      ctx.fillStyle = color;
+      ctx.font = `${isItalic ? 'italic ' : ''}${fontWeight} ${fontSize}px sans-serif`;
+      const words = text.split(' ');
+      let line = '';
+      let currentY = y;
+      const lineHeight = fontSize * 1.45;
+
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        if (testWidth > maxWidth && n > 0) {
+          ctx.fillText(line, x, currentY);
+          line = words[n] + ' ';
+          currentY += lineHeight;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, x, currentY);
+      return currentY + lineHeight;
+    };
+
+    let pLeftY = 320;
+    let pRightY = 320;
+
+    // Draw all 30 questions
+    questions.forEach((q, idx) => {
+      const isLeftCol = q.id <= 15;
+      const xCoord = isLeftCol ? 50 : 720;
+      let yCoord = isLeftCol ? pLeftY : pRightY;
+      const currentHeight = isLeftCol ? leftHeights[idx] : rightHeights[idx - 15];
+
+      // Draw custom card drop shadow
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.04)';
+      ctx.beginPath();
+      drawRoundRect(ctx, xCoord + 2, yCoord + 2, colWidth, currentHeight, 14);
+      ctx.fill();
+
+      // Draw elegant white rounded rect card
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      drawRoundRect(ctx, xCoord, yCoord, colWidth, currentHeight, 14);
+      ctx.fill();
+      ctx.stroke();
+
+      // Position pointers inside Card
+      let innerPointerY = yCoord + 20;
+
+      // Card header tags/pills
+      let catLabel = '';
+      let catColor = '#2563eb';
+      if (q.id <= 4 || q.id === 21 || q.id === 26) {
+        catLabel = 'Tawadhu';
+        catColor = '#2563eb'; // blue
+      } else if (q.id <= 7 || q.id === 22 || q.id === 27) {
+        catLabel = 'Tasamuh';
+        catColor = '#4f46e5'; // indigo
+      } else if (q.id <= 10 || q.id === 23 || q.id === 28) {
+        catLabel = "Ta'awun";
+        catColor = '#d97706'; // orange/amber
+      } else if (q.id <= 13 || q.id === 24 || q.id === 29) {
+        catLabel = 'Medsos Adab';
+        catColor = '#0369a1'; // Sky-blue
+      } else {
+        catLabel = 'Abu Bakar R.A.';
+        catColor = '#7c3aed'; // purple
+      }
+
+      // No. Soal blue pill
+      ctx.fillStyle = '#eff6ff'; // Light sky blue
+      ctx.beginPath();
+      drawRoundRect(ctx, xCoord + 20, innerPointerY, 82, 24, 6);
+      ctx.fill();
+
+      ctx.fillStyle = '#2563eb';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(`SOAL No. ${q.id.toString().padStart(2, '0')}`, xCoord + 27, innerPointerY + 16);
+
+      // Topic pill with its corresponding thematic color
+      ctx.fillStyle = `${catColor}12`; // 12% opacity color fill
+      ctx.beginPath();
+      drawRoundRect(ctx, xCoord + 110, innerPointerY, 138, 24, 6);
+      ctx.fill();
+
+      ctx.fillStyle = catColor;
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(catLabel.toUpperCase(), xCoord + 120, innerPointerY + 16);
+
+      // Question Type metadata badge
+      const styleLabel = q.type === 'pilihan-ganda' ? 'Opsi Tunggal' : q.type === 'benar-salah' ? 'Benar / Salah' : 'Pilihan Banyak';
+      ctx.fillStyle = '#f1f5f9';
+      ctx.beginPath();
+      drawRoundRect(ctx, xCoord + 256, innerPointerY, 115, 24, 6);
+      ctx.fill();
+
+      ctx.fillStyle = '#475569';
+      ctx.font = 'bold 11.5px sans-serif';
+      ctx.fillText(styleLabel, xCoord + 266, innerPointerY + 16);
+
+      innerPointerY += 38;
+
+      // Draw Wrapped Question Text
+      innerPointerY = drawTextWrapped(q.questionText, xCoord + 20, innerPointerY, colWidth - 40, 14.5, 'bold', '#0f172a');
+      innerPointerY += 12;
+
+      // Format correct answer text
+      let correctStr = '';
+      if (Array.isArray(q.correctKey)) {
+        const matchedOpts = q.options.filter(opt => (q.correctKey as string[]).includes(opt.key));
+        correctStr = `Kunci: ${matchedOpts.map(o => `${o.key}. ${o.text}`).join(' & ')}`;
+      } else {
+        const matched = q.options.find(opt => opt.key === q.correctKey);
+        correctStr = `Kunci: ${matched ? `${matched.key}. ${matched.text}` : q.correctKey}`;
+      }
+
+      // Draw answer ribbon box
+      ctx.fillStyle = '#ecfdf5'; // light emerald-50
+      ctx.strokeStyle = '#a7f3d0';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      drawRoundRect(ctx, xCoord + 20, innerPointerY, colWidth - 40, 42, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      // Emerald Circle with checkmark Icon
+      ctx.beginPath();
+      ctx.arc(xCoord + 38, innerPointerY + 21, 9, 0, Math.PI * 2);
+      ctx.fillStyle = '#10b981';
+      ctx.fill();
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(xCoord + 34, innerPointerY + 21);
+      ctx.lineTo(xCoord + 37, innerPointerY + 24);
+      ctx.lineTo(xCoord + 42, innerPointerY + 18);
+      ctx.stroke();
+
+      // Write key text inside emerald ribbon
+      ctx.fillStyle = '#065f46';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(correctStr, xCoord + 58, innerPointerY + 25);
+
+      innerPointerY += 56;
+
+      // Clean divider line
+      ctx.strokeStyle = '#f1f5f9';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(xCoord + 20, innerPointerY);
+      ctx.lineTo(xCoord + colWidth - 20, innerPointerY);
+      ctx.stroke();
+
+      innerPointerY += 16;
+
+      // Write Material Explanation details
+      innerPointerY = drawTextWrapped(`Materi Esensial: ${q.explanation}`, xCoord + 20, innerPointerY, colWidth - 40, 11.5, 'normal', '#475569', true);
+
+      // Increment tracking Y coordinates
+      if (isLeftCol) {
+        pLeftY += currentHeight + 24;
+      } else {
+        pRightY += currentHeight + 24;
+      }
+    });
+
+    // 6. Draw Footer Section
+    ctx.fillStyle = '#1e3a8a';
+    ctx.fillRect(0, totalCanvasHeight - 100, 1400, 100);
+
+    ctx.fillStyle = '#93c5fd';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('OFFICIAL CBT INFOGRAPHICS • MTs KELAS VIII MATA PELAJARAN AKIDAH AKHLAK', 50, totalCanvasHeight - 55);
+
+    const timeStampLog = `Siswa/i: ${studentName} - Kelas ${studentClass} (Token: ${studentId}) • Dicetak pada: ${new Date().toLocaleDateString('id-ID')} Pukul ${new Date().toLocaleTimeString('id-ID')} WIB`;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '500 12.5px sans-serif';
+    ctx.fillText(timeStampLog, 50, totalCanvasHeight - 33);
+
+    // Official seal watermark text
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('✓ CBT VERIFIED DIGITAL SHEET', 1180, totalCanvasHeight - 44);
+
+    // Run trigger download of graphic file
+    try {
+      const dataUrl = canvas.toDataURL('image/png');
+      const dlLink = document.createElement('a');
+      dlLink.href = dataUrl;
+      dlLink.setAttribute('download', `Kisi_Kisi_dan_Kunci_Jawaban_Akidah_Akhlak_8_${studentName.replace(/\s+/g, '_')}.png`);
+      document.body.appendChild(dlLink);
+      dlLink.click();
+      document.body.removeChild(dlLink);
+    } catch (e) {
+      console.error("Canvas toDataURL failed, attempting blob fallback", e);
+    }
   };
 
   return (
