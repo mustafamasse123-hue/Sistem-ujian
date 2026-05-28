@@ -1,0 +1,6 @@
+{
+  "name": "CBT Akidah Akhlak VIII MTs",
+  "description": "Aplikasi Ujian CBT (Computer Based Test) Akidah Akhlak Kelas VIII MTs dengan 30 butir soal interaktif disertai penjelasan materi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
