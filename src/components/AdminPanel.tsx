@@ -14,6 +14,8 @@ interface AdminPanelProps {
   welcomeConfig: WelcomeScreenConfig;
   setWelcomeConfig: (cfg: WelcomeScreenConfig) => void;
   onExit: () => void;
+  isPowerButtonDisabled: boolean;
+  setIsPowerButtonDisabled: (disabled: boolean) => void;
 }
 
 export default function AdminPanel({
@@ -21,7 +23,9 @@ export default function AdminPanel({
   setQuestions,
   welcomeConfig,
   setWelcomeConfig,
-  onExit
+  onExit,
+  isPowerButtonDisabled,
+  setIsPowerButtonDisabled
 }: AdminPanelProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
@@ -481,6 +485,30 @@ export default function AdminPanel({
                       onChange={(e) => setFooterInput(e.target.value)}
                       className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
                     />
+                  </div>
+
+                  {/* Kiosk and Power Button Security Control */}
+                  <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3">
+                    <h4 className="text-xs font-extrabold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
+                      🔒 Keamanan Kiosk & Tombol Daya
+                    </h4>
+                    <p className="text-[11px] text-slate-500 leading-normal">
+                      Mengontrol fungsionalitas tombol daya tiruan pada sudut kanan bawah layar. Jika dinonaktifkan, siswa tidak dapat menggunakan tombol daya untuk keluar/kembali dari layar ujian tanpa izin dari proktor/admin.
+                    </p>
+                    <label className="relative flex items-center gap-3 cursor-pointer select-none py-1 group">
+                      <input
+                        type="checkbox"
+                        checked={isPowerButtonDisabled}
+                        onChange={(e) => {
+                          setIsPowerButtonDisabled(e.target.checked);
+                          showToast(e.target.checked ? 'Tombol daya telah DINONAKTIFKAN bagi siswa!' : 'Tombol daya aktif kembali!', 'info');
+                        }}
+                        className="h-4.5 w-4.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-xs font-bold text-slate-800 group-hover:text-blue-700 transition-colors">
+                        Nonaktifkan Tombol Daya (Siswa tidak bisa menutup/keluar ujian)
+                      </span>
+                    </label>
                   </div>
 
                   <div className="pt-2 flex items-center gap-3">

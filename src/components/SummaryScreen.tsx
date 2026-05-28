@@ -12,6 +12,7 @@ interface SummaryScreenProps {
   incorrectAttemptsCount: { [qId: number]: boolean }; // Indicates questions that had incorrect attempts before completion
   timeSpentSeconds: number;
   onReset: () => void;
+  isKioskViolation?: boolean;
 }
 
 export default function SummaryScreen({
@@ -23,6 +24,7 @@ export default function SummaryScreen({
   incorrectAttemptsCount,
   timeSpentSeconds,
   onReset,
+  isKioskViolation = false,
 }: SummaryScreenProps) {
   
   // Calculate correct on first try
@@ -774,6 +776,22 @@ export default function SummaryScreen({
 
         <div className="p-6 sm:p-8 space-y-8">
           
+          {isKioskViolation && (
+            <div className="bg-rose-50 border-2 border-rose-200 rounded-2xl p-5 text-rose-900 space-y-2 shadow-sm animate-pulse">
+              <div className="flex items-center gap-2">
+                <span className="p-1 px-2 rounded-lg bg-rose-600 text-white font-extrabold text-[10px] uppercase tracking-wider">
+                  Sistem Lockout
+                </span>
+                <h4 className="font-display font-black text-xs uppercase tracking-wider text-rose-950">
+                  Ujian Dihentikan & Disimpan Otomatis
+                </h4>
+              </div>
+              <p className="text-xs leading-relaxed text-rose-700 font-medium">
+                Sistem mendeteksi tindakan keluar dari modus **Layar Penuh (Kiosk Mode)** atau perpindahan jendela/aplikasi tanpa melalui Tombol Daya yang sah. Sesuai prosedur proktor CBT, seluruh sisa jawaban telah disimpan, akses lembar soal dihentikan, dan Anda tidak diizinkan melanjutkan menjawab.
+              </p>
+            </div>
+          )}
+
           {/* Section 1: Candidate Card */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-xl border border-slate-200">
             <div>

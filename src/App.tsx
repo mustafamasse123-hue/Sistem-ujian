@@ -12,7 +12,7 @@ import AdminPanel from './components/AdminPanel';
 import KioskLockdown from './components/KioskLockdown';
 import PowerButton from './components/PowerButton';
 
-import { BookOpen } from 'lucide-react';
+import { BookOpen, PanelRight, PanelRightClose } from 'lucide-react';
 
 // Helper to shuffle a single question's options and map correct keys
 function shuffleQuestion(q: Question): Question {
@@ -184,6 +184,18 @@ export default function App() {
     return () => clearInterval(timer);
   }, [isWelcomed, isExamFinished, isAdminMode]);
 
+  const [isPowerButtonDisabled, setIsPowerButtonDisabled] = useState<boolean>(() => {
+    return localStorage.getItem('cbt_power_button_disabled') === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('cbt_power_button_disabled', String(isPowerButtonDisabled));
+  }, [isPowerButtonDisabled]);
+
+  const [isSidebarHidden, setIsSidebarHidden] = useState(false);
+  const [isKioskViolation, setIsKioskViolation] = useState(false);
+  const isPowerButtonBypassRef = React.useRef(false);
+
   // Security Kiosk State
   const [isKioskLocked, setIsKioskLocked] = useState(false);
 
@@ -225,7 +237,17 @@ export default function App() {
   useEffect(() => {
     if (!isWelcomed || isExamFinished || isAdminMode) return;
 
+    const triggerKioskViolation = () => {
+      if (isPowerButtonBypassRef.current) return;
+      setIsKioskViolation(true);
+      setIsExamFinished(true);
+      try {
+        soundSynth.playError();
+      } catch (_) {}
+    };
+
     const handleFullscreenChange = () => {
+      if (isPowerButtonBypassRef.current) return;
       const isCurrentlyFullscreen = !!(
         document.fullscreenElement ||
         (document as any).webkitFullscreenElement ||
@@ -234,27 +256,20 @@ export default function App() {
       );
       
       if (!isCurrentlyFullscreen) {
-        setIsKioskLocked(true);
-        try {
-          soundSynth.playError();
-        } catch (_) {}
+        triggerKioskViolation();
       }
     };
 
     const handleVisibilityChange = () => {
+      if (isPowerButtonBypassRef.current) return;
       if (document.visibilityState === 'hidden') {
-        setIsKioskLocked(true);
-        try {
-          soundSynth.playError();
-        } catch (_) {}
+        triggerKioskViolation();
       }
     };
 
     const handleWindowBlur = () => {
-      setIsKioskLocked(true);
-      try {
-        soundSynth.playError();
-      } catch (_) {}
+      if (isPowerButtonBypassRef.current) return;
+      triggerKioskViolation();
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -285,6 +300,7 @@ export default function App() {
     setExamQuestions(shuffled);
     
     setIsKioskLocked(false);
+    setIsKioskViolation(false);
     setIsWelcomed(true);
 
     // Enter fullscreen right after user gesture starts the exam
@@ -311,9 +327,17 @@ export default function App() {
     setIsWelcomed(false);
     setExamQuestions([]);
     setIsKioskLocked(false);
+    setIsKioskViolation(false);
   };
 
   const handlePowerDoublePress = () => {
+    if (isPowerButtonDisabled) {
+      try {
+        soundSynth.playError();
+      } catch (_) {}
+      return;
+    }
+
     if (isKioskLocked) {
       enterFullscreen();
       setIsKioskLocked(false);
@@ -321,8 +345,12 @@ export default function App() {
         soundSynth.playSuccess();
       } catch (_) {}
     } else if (isWelcomed) {
+      isPowerButtonBypassRef.current = true;
       exitFullscreen();
       handleResetExam();
+      setTimeout(() => {
+        isPowerButtonBypassRef.current = false;
+      }, 1000);
     }
   };
 
@@ -437,6 +465,8 @@ export default function App() {
         welcomeConfig={welcomeConfig}
         setWelcomeConfig={setWelcomeConfig}
         onExit={() => setIsAdminMode(false)}
+        isPowerButtonDisabled={isPowerButtonDisabled}
+        setIsPowerButtonDisabled={setIsPowerButtonDisabled}
       />
     );
   }
@@ -463,8 +493,9 @@ export default function App() {
           incorrectAttemptsCount={incorrectAttempts}
           timeSpentSeconds={TIMER_INITIAL_SECONDS - timeLeftSeconds}
           onReset={handleResetExam}
+          isKioskViolation={isKioskViolation}
         />
-        <PowerButton onDoublePress={handlePowerDoublePress} />
+        <PowerButton onDoublePress={handlePowerDoublePress} isDisabled={isPowerButtonDisabled} />
       </>
     );
   }
@@ -528,14 +559,35 @@ export default function App() {
               {welcomeConfig.headerText} — {welcomeConfig.subheadText}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-800">
-            <span>Progress: {totalCorrect} dari {examQuestions.length} Selesai</span>
-            <div className="h-2 w-24 bg-blue-100 rounded-full overflow-hidden ml-1.5 sm:block hidden">
-              <div 
-                className="bg-blue-600 h-full rounded-full transition-all" 
-                style={{ width: `${examQuestions.length > 0 ? (totalCorrect / examQuestions.length) * 100 : 0}%` }}
-              ></div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-800">
+              <span>Progress: {totalCorrect} dari {examQuestions.length} Selesai</span>
+              <div className="h-2 w-24 bg-blue-100 rounded-full overflow-hidden ml-1.5 sm:block hidden">
+                <div 
+                  className="bg-blue-600 h-full rounded-full transition-all" 
+                  style={{ width: `${examQuestions.length > 0 ? (totalCorrect / examQuestions.length) * 100 : 0}%` }}
+                ></div>
+              </div>
             </div>
+
+            <button
+              onClick={() => setIsSidebarHidden(prev => !prev)}
+              type="button"
+              className="flex items-center gap-1.5 bg-white hover:bg-slate-100 text-blue-800 px-3 py-1.5 rounded-lg text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer border border-blue-200"
+              title={isSidebarHidden ? "Tampilkan nomor navigasi soal" : "Sembunyikan nomor navigasi soal"}
+            >
+              {isSidebarHidden ? (
+                <>
+                  <PanelRight className="w-3.5 h-3.5" />
+                  <span className="sm:inline hidden">Tampilkan Navigasi</span>
+                </>
+              ) : (
+                <>
+                  <PanelRightClose className="w-3.5 h-3.5" />
+                  <span className="sm:inline hidden">Sembunyikan Navigasi</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 
@@ -543,7 +595,7 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           {/* Left Column: Interactive Exam Panel */}
-          <div className="lg:col-span-8">
+          <div className={isSidebarHidden ? "lg:col-span-12" : "lg:col-span-8"}>
             <QuestionArea
               question={activeQuestion}
               questionNumber={currentQuestionIndex + 1}
@@ -561,22 +613,24 @@ export default function App() {
           </div>
 
           {/* Right Column: CBT Legend & Square Nave grid */}
-          <div className="lg:col-span-4">
-            <QuestionNav
-              questions={examQuestions}
-              totalQuestions={examQuestions.length}
-              currentIndex={currentQuestionIndex}
-              correctStatus={correctStatus}
-              incorrectAttempts={incorrectAttempts}
-              onNavigate={handleJumpToQuestion}
-            />
-          </div>
+          {!isSidebarHidden && (
+            <div className="lg:col-span-4">
+              <QuestionNav
+                questions={examQuestions}
+                totalQuestions={examQuestions.length}
+                currentIndex={currentQuestionIndex}
+                correctStatus={correctStatus}
+                incorrectAttempts={incorrectAttempts}
+                onNavigate={handleJumpToQuestion}
+              />
+            </div>
+          )}
 
         </div>
 
       </main>
 
-      <PowerButton onDoublePress={handlePowerDoublePress} />
+      <PowerButton onDoublePress={handlePowerDoublePress} isDisabled={isPowerButtonDisabled} />
 
     </div>
   );
