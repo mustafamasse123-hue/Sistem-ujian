@@ -1,6 +1,7 @@
 import React from 'react';
 import { Question } from '../types';
-import { Award, RefreshCcw, CheckCircle2, Bookmark, Flame, Calendar, Clock, RotateCcw, Download } from 'lucide-react';
+import { Award, RefreshCcw, CheckCircle2, Bookmark, Flame, Calendar, Clock, RotateCcw, Download, Presentation } from 'lucide-react';
+import pptxgen from 'pptxgenjs';
 
 interface SummaryScreenProps {
   studentName: string;
@@ -489,6 +490,257 @@ export default function SummaryScreen({
     }
   };
 
+  const downloadPPTX = () => {
+    const pptx = new pptxgen();
+    
+    // Set 16:9 widescreen presentation layout
+    pptx.layout = 'LAYOUT_16x9';
+
+    // 1. COVER SLIDE
+    const coverSlide = pptx.addSlide();
+    coverSlide.background = { fill: '1E3A8A' }; // Dark indigo blue
+
+    // Slide 1 Decorative amber/gold strip on the left side
+    coverSlide.addText("", {
+      x: 0.0,
+      y: 0.0,
+      w: 0.25,
+      h: 5.625,
+      fill: { color: 'F59E0B' }
+    });
+
+    // Main Title
+    coverSlide.addText("KISI-KISI & KUNCI JAWABAN AKIDAH AKHLAK", {
+      x: 0.8,
+      y: 0.8,
+      w: 8.4,
+      h: 0.9,
+      fontSize: 24,
+      bold: true,
+      color: 'FFFFFF',
+      fontFace: 'Arial',
+      align: 'left'
+    });
+
+    // Subtitle
+    coverSlide.addText("Asesmen Akhir Semester Berbasis CBT (Computer-Based Test)\nMTs Kelas VIII (Kelas 8 A - D)", {
+      x: 0.8,
+      y: 1.7,
+      w: 8.4,
+      h: 0.8,
+      fontSize: 13,
+      bold: true,
+      color: '93C5FD',
+      fontFace: 'Arial',
+      align: 'left'
+    });
+
+    // Student identity info card background
+    coverSlide.addText("", {
+      x: 0.8,
+      y: 2.7,
+      w: 8.4,
+      h: 1.8,
+      fill: { color: '1E40AF' },
+      line: { color: '3B82F6', width: 1.5 }
+    });
+
+    // Student identity info text inside card
+    const metaRuns = [
+      { text: `NAMA LENGKAP      : `, options: { bold: true, color: '94A3B8' } },
+      { text: `${studentName}\n`, options: { bold: true, color: 'FFFFFF' } },
+      { text: `KELAS             : `, options: { bold: true, color: '94A3B8' } },
+      { text: `${studentClass}\n`, options: { bold: true, color: 'FFFFFF' } },
+      { text: `ID CBT / TOKEN    : `, options: { bold: true, color: '94A3B8' } },
+      { text: `${studentId}\n`, options: { bold: true, color: 'FFFFFF' } },
+      { text: `SKOR HASIL UJIAN  : `, options: { bold: true, color: 'FEF08A' } },
+      { text: `${finalScore} / 100\n`, options: { bold: true, color: 'FEF08A' } },
+      { text: `PREDIKAT KELULUSAN: `, options: { bold: true, color: 'FEF08A' } },
+      { text: `${predicate.label}\n`, options: { bold: true, color: 'FEF08A' } },
+      { text: `DURASI PENGERJAAN : `, options: { bold: true, color: 'CBD5E1' } },
+      { text: `${formatDuration(timeSpentSeconds)}`, options: { color: 'CBD5E1' } }
+    ];
+
+    coverSlide.addText(metaRuns, {
+      x: 1.1,
+      y: 2.85,
+      w: 7.8,
+      h: 1.5,
+      fontSize: 11,
+      fontFace: 'Arial'
+    });
+
+    // Cover page footer
+    coverSlide.addText("Dicetak resmi oleh Aplikasi CBT Akidah Akhlak Madrasah Interaktif", {
+      x: 0.8,
+      y: 4.8,
+      w: 8.4,
+      h: 0.4,
+      fontSize: 10,
+      color: '60A5FA',
+      align: 'center'
+    });
+
+    // 2. DETAILED EXPLANATION PAGES (1 SLIDE PER QUESTION)
+    questions.forEach((q, qIndex) => {
+      const qSlide = pptx.addSlide();
+      qSlide.background = { fill: 'F8FAFC' };
+
+      // Theme logic for color badges
+      let catLabel = '';
+      let catColor = '2563EB';
+      if (q.id <= 4 || q.id === 21 || q.id === 26) {
+        catLabel = 'Tawadhu (Rendah Hati)';
+        catColor = '2563EB';
+      } else if (q.id <= 7 || q.id === 22 || q.id === 27) {
+        catLabel = 'Tasamuh (Toleransi)';
+        catColor = '4F46E5';
+      } else if (q.id <= 10 || q.id === 23 || q.id === 28) {
+        catLabel = "Ta'awun (Tolong Menolong)";
+        catColor = 'D97706';
+      } else if (q.id <= 13 || q.id === 24 || q.id === 29) {
+        catLabel = 'Adab Media Sosial';
+        catColor = '0369A1';
+      } else {
+        catLabel = 'Kisah Abu Bakar As-Siddiq R.A.';
+        catColor = '7C3AED';
+      }
+
+      // No. Soal badging row at top
+      qSlide.addText(`SOAL No. ${q.id.toString().padStart(2, '0')}`, {
+        x: 0.5,
+        y: 0.3,
+        w: 1.4,
+        h: 0.35,
+        fontSize: 12,
+        bold: true,
+        color: '2563EB',
+        fill: { color: 'EFF6FF' },
+        align: 'center',
+        valign: 'middle'
+      });
+
+      qSlide.addText(`Materi: ${catLabel}`, {
+        x: 2.05,
+        y: 0.3,
+        w: 4.3,
+        h: 0.35,
+        fontSize: 11,
+        bold: true,
+        color: catColor,
+        fill: { color: 'F1F5F9' },
+        align: 'left',
+        valign: 'middle'
+      });
+
+      const typeLabel = q.type === 'pilihan-ganda' ? 'Opsi Tunggal' : q.type === 'benar-salah' ? 'Benar / Salah' : 'Pilihan Banyak';
+      qSlide.addText(`Tipe Soal: ${typeLabel}`, {
+        x: 6.5,
+        y: 0.3,
+        w: 3.0,
+        h: 0.35,
+        fontSize: 11,
+        bold: true,
+        color: '475569',
+        fill: { color: 'F1F5F9' },
+        align: 'center',
+        valign: 'middle'
+      });
+
+      // Question Text
+      qSlide.addText(q.questionText, {
+        x: 0.5,
+        y: 0.85,
+        w: 9.0,
+        h: 1.3,
+        fontSize: 13.5,
+        bold: true,
+        color: '0F172A',
+        valign: 'middle',
+        align: 'left'
+      });
+
+      // Format correct answer text
+      let correctStr = '';
+      if (Array.isArray(q.correctKey)) {
+        const matchedOpts = q.options.filter(opt => (q.correctKey as string[]).includes(opt.key));
+        correctStr = `Kunci: ${matchedOpts.map(o => `[${o.key}] ${o.text}`).join(' & ')}`;
+      } else {
+        const matched = q.options.find(opt => opt.key === q.correctKey);
+        correctStr = `Kunci: [${q.correctKey}] ${matched ? matched.text : q.correctKey}`;
+      }
+
+      // Emerald Correct Answer Ribbon Box
+      qSlide.addText(`✓ JAWABAN YANG BENAR:\n${correctStr}`, {
+        x: 0.5,
+        y: 2.3,
+        w: 9.0,
+        h: 0.9,
+        fontSize: 12,
+        bold: true,
+        color: '065F46',
+        fill: { color: 'ECFDF5' },
+        line: { color: 'A7F3D0', width: 1 },
+        valign: 'middle',
+        align: 'left'
+      });
+
+      // Explanation Box
+      qSlide.addText(`📖 Pembahasan Ilmiah & Kunci Pembelajaran:\n\n${q.explanation}`, {
+        x: 0.5,
+        y: 3.4,
+        w: 9.0,
+        h: 1.5,
+        fontSize: 11,
+        color: '475569',
+        fill: { color: 'FFFFFF' },
+        line: { color: 'E2E8F0', width: 1 },
+        valign: 'top',
+        align: 'left'
+      });
+
+      // Feedback Status Bar
+      const wasCorrect = correctStatus[q.id] === true;
+      const hadFailures = incorrectAttemptsCount[q.id] === true;
+      let statusText = '';
+      let statusColor = 'EF4444';
+      if (wasCorrect && !hadFailures) {
+        statusText = 'Hasil Analisis Anda: BENAR (Sesuai Kunci - Peluang Pertama)';
+        statusColor = '10B981';
+      } else if (hadFailures) {
+        statusText = 'Hasil Analisis Anda: BENAR (Melalui Percobaan Lanjutan)';
+        statusColor = 'F59E0B';
+      } else {
+        statusText = 'Hasil Analisis Anda: SALAH / BELUM KONSISTEN';
+        statusColor = 'EF4444';
+      }
+
+      qSlide.addText(statusText, {
+        x: 0.5,
+        y: 5.0,
+        w: 5.5,
+        h: 0.3,
+        fontSize: 10,
+        bold: true,
+        color: statusColor,
+        align: 'left'
+      });
+
+      // Footer Slide Counter
+      qSlide.addText(`Slide ${qIndex + 2} dari ${questions.length + 1} | Madrasah Interaktif VIII`, {
+        x: 6.0,
+        y: 5.0,
+        w: 3.5,
+        h: 0.3,
+        fontSize: 9.5,
+        color: '94A3B8',
+        align: 'right'
+      });
+    });
+
+    pptx.writeFile({ fileName: `Kisi_Kisi_dan_Kunci_Jawaban_Akidah_Akhlak_8_${studentName.replace(/\s+/g, '_')}.pptx` });
+  };
+
   return (
     <div className="min-h-screen py-10 px-4 sm:px-6 bg-slate-100 relative overflow-hidden flex flex-col items-center">
       
@@ -656,23 +908,30 @@ export default function SummaryScreen({
             <button
               id="btn-restart-exam"
               onClick={onReset}
-              className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 min-w-[185px] cursor-pointer"
+              className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 min-w-[170px] cursor-pointer"
             >
               <RotateCcw className="w-4 h-4" /> Ulangi Ujian (Reset)
             </button>
             <button
               id="btn-download-syllabus"
               onClick={downloadSyllabusAndKey}
-              className="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 min-w-[185px] cursor-pointer"
+              className="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 min-w-[170px] cursor-pointer"
             >
-              <Download className="w-4 h-4" /> Unduh Kisi-kisi & Kunci
+              <Download className="w-4 h-4" /> Unduh Infografis (PNG)
+            </button>
+            <button
+              id="btn-download-pptx"
+              onClick={downloadPPTX}
+              className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 min-w-[170px] cursor-pointer"
+            >
+              <Presentation className="w-4 h-4" /> Unduh Slides (PPTX)
             </button>
             <button
               id="btn-print-certificate"
               onClick={() => window.print()}
-              className="px-6 py-3.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-sm font-bold rounded-xl transition-all shadow-xs flex items-center justify-center gap-2 min-w-[185px] cursor-pointer"
+              className="px-6 py-3.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-sm font-bold rounded-xl transition-all shadow-xs flex items-center justify-center gap-2 min-w-[170px] cursor-pointer"
             >
-              Cetak Kartu Hasil Ujian
+              Cetak Kartu Hasil
             </button>
           </div>
 
