@@ -42,7 +42,7 @@ export default function QuestionArea({
         setMultiSelection([]);
       }
     }
-  }, [question, selectedAnswer]);
+  }, [question.id]);
 
   // Determine material category based on question ID
   const getCategory = (id: number): { label: string; color: string } => {
@@ -221,13 +221,20 @@ export default function QuestionArea({
 
                 {/* Status Indicator */}
                 {question.type === 'pilihan-ganyak' ? (
-                  <input
+                  <div
                     id={`checkbox-option-${question.id}-${option.key}`}
-                    type="checkbox"
-                    checked={isSelected}
-                    readOnly
-                    className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 pointer-events-none"
-                  />
+                    className={`h-5 w-5 rounded border-2 flex items-center justify-center transition-all shrink-0 ${
+                      isSelected 
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-xs' 
+                        : 'border-slate-300 bg-white group-hover:border-blue-300'
+                    }`}
+                  >
+                    {isSelected && (
+                      <svg className="w-3.5 h-3.5 stroke-current" viewBox="0 0 24 24" fill="none" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </div>
                 ) : (
                   (isCorrect || hasIncorrectAttempt) ? (
                     isOptionCorrect ? (

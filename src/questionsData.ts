@@ -291,36 +291,42 @@ export const questionsData: Question[] = [
   },
   {
     id: 23,
-    type: 'benar-salah',
-    questionText: 'Kita diperbolehkan saling menolong dalam perbuatan dosa asalkan tujuannya baik.',
+    type: 'pilihan-ganda',
+    questionText: 'Bagaimana hukum tolong-menolong dalam perbuatan maksiat atau dosa menurut ajaran Islam?',
     options: [
-      { key: 'A', text: 'BENAR' },
-      { key: 'B', text: 'SALAH' }
+      { key: 'A', text: 'Diperbolehkan jika tujuannya sangat mendesak demi solidaritas' },
+      { key: 'B', text: 'Sunnah demi menjaga rahasia aib teman dekat' },
+      { key: 'C', text: 'Haram dan dilarang secara mutlak karena bertentangan dengan Al-Qur\'an' },
+      { key: 'D', text: 'Makruh tetapi mendapatkan kelonggaran jika terpaksa' }
     ],
-    correctKey: 'B',
-    explanation: 'SALAH. Islam melarang keras tolong-menolong dalam dosa dan permusuhan, pertolongan hanya boleh dalam kebaikan dan ketakwaan.'
+    correctKey: 'C',
+    explanation: 'Haram. Islam melarang keras tolong-menolong dalam dosa dan permusuhan sesuai QS. Al-Ma\'idah ayat 2, pertolongan hanya boleh dilakukan dalam kebaikan dan ketakwaan.'
   },
   {
     id: 24,
-    type: 'benar-salah',
-    questionText: 'Berkomentar dengan kata-kata kasar dan menghina di kolom komentar media sosial termasuk pelanggaran adab.',
+    type: 'pilihan-ganda',
+    questionText: 'Mengapa berkomentar dengan kata-kata kasar dan menghina di media sosial dilarang dalam adab Islam?',
     options: [
-      { key: 'A', text: 'BENAR' },
-      { key: 'B', text: 'SALAH' }
+      { key: 'A', text: 'Karena hal tersebut dapat memicu persaudaraan yang semakin kuat' },
+      { key: 'B', text: 'Karena tulisan mencerminkan akhlak, dapat menyakiti orang lain, dan berbuah dosa' },
+      { key: 'C', text: 'Karena media sosial hanya boleh diisi konten gambar, bukan tulisan' },
+      { key: 'D', text: 'Karena admin media sosial akan langsung mematikan koneksi internet kita' }
     ],
-    correctKey: 'A',
-    explanation: 'BENAR. Kita wajib menjaga lisan dan tulisan di mana saja, termasuk di dunia maya, karena itu bisa menyakiti hati orang lain.'
+    correctKey: 'B',
+    explanation: 'Karena tulisan kita di media sosial sama dengan lisan kita; harus dijaga demi keselamatan bersama dan menghindari fitnah serta dosa lisan.'
   },
   {
     id: 25,
-    type: 'benar-salah',
-    questionText: 'Abu Bakar As-Siddiq berasal dari kabilah Quraisy dan merupakan sahabat yang paling dekat dengan Rasulullah.',
+    type: 'pilihan-ganda',
+    questionText: 'Dari kabilah Quraisy manakah asal silsilah keturunan sahabat mulia Abu Bakar As-Siddiq r.a.?',
     options: [
-      { key: 'A', text: 'BENAR' },
-      { key: 'B', text: 'SALAH' }
+      { key: 'A', text: 'Bani Taim' },
+      { key: 'B', text: 'Bani Hasyim' },
+      { key: 'C', text: 'Bani Makhzum' },
+      { key: 'D', text: 'Bani Adi' }
     ],
     correctKey: 'A',
-    explanation: 'BENAR. Beliau berasal dari Bani Taim yang masih satu kabilah dengan Rasulullah dan menjadi sahabat kepercayaan hingga akhir hayat.'
+    explanation: 'Nasab Abu Bakar As-Siddiq bertemu dengan Rasulullah pada Adnan dan beliau berasal dari keturunan Bani Taim.'
   },
   // ==============================================
   // BAGIAN 3: PILIH LEBIH DARI SATU JAWABAN (26 - 30)
@@ -369,30 +375,28 @@ export const questionsData: Question[] = [
   },
   {
     id: 29,
-    type: 'pilihan-ganyak',
-    questionText: 'Adab-adab yang harus diperhatikan saat menggunakan media sosial antara lain adalah ...',
+    type: 'pilihan-ganda',
+    questionText: 'Manakah bentuk adab yang paling utama saat kita berinteraksi di ruang komentar media sosial?',
     options: [
-      { key: 'A', text: 'Menyampaikan berita yang benar dan terpercaya' },
-      { key: 'B', text: 'Menyebarkan berita yang menggembirakan meskipun bohong' },
-      { key: 'C', text: 'Menghormati orang lain dalam berkomentar' },
-      { key: 'D', text: 'Tidak menyebutkan aib atau keburukan orang lain' },
-      { key: 'E', text: 'Menggunakan kata-kata kasar agar disegani' }
+      { key: 'A', text: 'Menggunakan kalimat provokatif dan sarkasme demi mendebat argumen lain' },
+      { key: 'B', text: 'Menghargai keberagaman argumen dengan bahasa yang santun dan bijaksana' },
+      { key: 'C', text: 'Menyebarkan rahasia internal teman sepermainan jika terjadi perselisihan' },
+      { key: 'D', text: 'Menyalin info dari sumber tidak terpercaya tanpa saringan tabayyun' }
     ],
-    correctKey: ['A', 'C', 'D'],
-    explanation: 'Yang benar adalah A, C, D. Menyebar berita bohong dan berkata kasar adalah perbuatan dosa yang dilarang agama.'
+    correctKey: 'B',
+    explanation: 'Menghargai argumen orang lain dengan bahasa yang santun, ramah, dan bebas kebencian adalah adab kunci bersosialisasi di kancah virtual.'
   },
   {
     id: 30,
-    type: 'pilihan-ganyak',
-    questionText: 'Sifat-sifat terpuji yang dimiliki oleh Abu Bakar As-Siddiq adalah ...',
+    type: 'pilihan-ganda',
+    questionText: 'Manakah di bawah ini peristiwa yang menggambarkan kedermawanan luar biasa sahabat Abu Bakar As-Siddiq r.a.?',
     options: [
-      { key: 'A', text: 'Jujur dan dapat dipercaya' },
-      { key: 'B', text: 'Dermawan dan suka memberi' },
-      { key: 'C', text: 'Pemberani dan tegas' },
-      { key: 'D', text: 'Licik dan penakut' },
-      { key: 'E', text: 'Pelit dan suka menumpuk harta' }
+      { key: 'A', text: 'Membeli dan membebaskan Bilal bin Rabah serta mendonasikan selururh hartanya untuk Perang Tabuk' },
+      { key: 'B', text: 'Menyembunyikan emas dan perak di kedalamannya agar luput dari zakat maal' },
+      { key: 'C', text: 'Meminta imbalan keuntungan perdagangan tinggi sewaktu dipercaya memegang baitul maal' },
+      { key: 'D', text: 'Menolak berinfak kepada fakir miskin jika tidak dipuji secara khalayak ramai' }
     ],
-    correctKey: ['A', 'B', 'C'],
-    explanation: 'Yang benar adalah A, B, C. Abu Bakar dikenal sangat jujur, banyak menyumbangkan hartanya untuk Islam, dan sangat berani serta tegas saat memimpin umat.'
+    correctKey: 'A',
+    explanation: 'Sikap mulia beliau terbukti tatkala beliau menebus pembebasan para budak teraniaya seperti Bilal bin Rabah, serta menyumbangkan seluruh harta bendanya saat perang Tabuk dikobarkan.'
   }
 ];
